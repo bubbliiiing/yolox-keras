@@ -125,10 +125,11 @@ img/street.jpg
 4、在predict.py里面进行设置可以进行video视频检测、fps测试、批量文件测试与保存。 
 
 ## 评估步骤 
-1、本文使用VOC格式进行评估。  
-2、如果在训练前已经运行过voc_annotation.py文件，代码会自动将数据集划分成训练集、验证集和测试集。如果想要修改测试集的比例，可以修改voc_annotation.py文件下的trainval_percent。trainval_percent用于指定(训练集+验证集)与测试集的比例，默认情况下 (训练集+验证集):测试集 = 9:1。train_percent用于指定(训练集+验证集)中训练集与验证集的比例，默认情况下 训练集:验证集 = 9:1。
-3、利用voc_annotation.py划分测试集后，前往get_map.py文件修改classes_path，classes_path用于指向检测类别所对应的txt，这个txt与训练、预测时的种类txt一样。评估自己的数据集必须要修改。
-4、运行get_map.py即可获得评估结果，评估结果会保存在map_out文件夹中。
+1、本文使用VOC格式进行评估。    
+2、划分测试集，如果在训练前已经运行过voc_annotation.py文件，代码会自动将数据集划分成训练集、验证集和测试集。如果想要修改测试集的比例，可以修改voc_annotation.py文件下的trainval_percent。trainval_percent用于指定(训练集+验证集)与测试集的比例，默认情况下 (训练集+验证集):测试集 = 9:1。train_percent用于指定(训练集+验证集)中训练集与验证集的比例，默认情况下 训练集:验证集 = 9:1。
+3、设置根目录下的yolo.py里的一些参数。第一次评估可以仅修改model_path以及classes_path。训练自己的数据集必须要修改。**model_path指向训练好的权值文件，在logs文件夹里。classes_path指向检测类别所对应的txt。**   
+4、设置根目录下的get_map.py里的一些参数。第一次评估可以仅修改classes_path，classes_path用于指向检测类别所对应的txt，评估自己的数据集必须要修改。与yolo.py中分开设置的原因是可以让使用者自己选择评估什么类别，而非所有类别。  
+5、运行get_map.py即可获得评估结果，评估结果会保存在map_out文件夹中。  
 
 ## Reference
 https://github.com/Megvii-BaseDetection/YOLOX
