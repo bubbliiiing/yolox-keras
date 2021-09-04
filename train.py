@@ -127,7 +127,7 @@ if __name__ == "__main__":
     num_val     = len(val_lines)
 
     if Freeze_Train:
-        freeze_layers = 125
+        freeze_layers = {'s': 125, 'm': 179, 'l': 234, 'x': 290}[phi]
         for i in range(freeze_layers): model_body.layers[i].trainable = False
         print('Freeze the first {} layers of total {} layers.'.format(freeze_layers, len(model_body.layers)))
         
