@@ -1,4 +1,4 @@
-## YOLOV4：You Only Look Once目标检测模型在Keras当中的实现
+## YOLOX：You Only Look Once目标检测模型在Keras当中的实现
 ---
 
 ## 目录
@@ -16,6 +16,9 @@
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
 | :-----: | :-----: | :------: | :------: | :------: | :-----: |
 | COCO-Train2017 | [yolox_s.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_s.h5) | COCO-Val2017 | 640x640 | 39.2 | 58.7
+| COCO-Train2017 | [yolox_m.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_m.h5) | COCO-Val2017 | 640x640 | 46.1 | 65.2
+| COCO-Train2017 | [yolox_l.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_l.h5) | COCO-Val2017 | 640x640 | 49.3 | 68.1
+| COCO-Train2017 | [yolox_x.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_x.h5) | COCO-Val2017 | 640x640 | 50.5 | 69.2
 
 ## 实现的内容
 - [x] 主干特征提取网络：使用了Focus网络结构。  
@@ -36,7 +39,7 @@ keras==2.1.5
 
 ## 文件下载
 训练所需的权值可在百度网盘中下载。  
-即将上传  
+链接: https://pan.baidu.com/s/1o14Vi-CzZEaz9hic_OPZCQ 提取码: 4kc2    
 
 VOC数据集下载地址如下：  
 VOC2007+2012训练集    
