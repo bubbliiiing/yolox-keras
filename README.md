@@ -18,8 +18,8 @@
 | COCO-Train2017 | [yolox_s.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_s.h5) | COCO-Val2017 | 640x640 | 39.2 | 58.7
 
 ## 实现的内容
-- [x] 主干特征提取网络：使用了Focus网络结构，这个结构是在YoloV5里面使用到比较有趣的网络结构，具体操作是在一张图片中每隔一个像素拿到一个值，这个时候获得了四个独立的特征层，然后将四个独立的特征层进行堆叠，此时宽高信息就集中到了通道信息，输入通道扩充了四倍。  
-- [x] 分类回归层：Decoupled Head，以前版本的Yolo所用的解耦头是一起的，也就是分类和回归在一个1X1卷积里实现，YoloX认为这给网络的识别带来了不利影响。在YoloX中，Yolo Head被分为了两部分，分别实现，最后预测的时候才整合在一起。
+- [x] 主干特征提取网络：使用了Focus网络结构。  
+- [x] 分类回归层：Decoupled Head，在YoloX中，Yolo Head被分为了分类回归两部分，最后预测的时候才整合在一起。
 - [x] 训练用到的小技巧：Mosaic数据增强、CIOU（原版是IOU和GIOU，CIOU效果类似，都是IOU系列的，甚至更新一些）、学习率余弦退火衰减。
 - [x] Anchor Free：不使用先验框
 - [x] SimOTA：为不同大小的目标动态匹配正样本。
