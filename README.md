@@ -84,7 +84,7 @@ dog
 ```python
 img/street.jpg
 ```  
-2、 利用video.py可进行摄像头检测。  
+2、在predict.py里面进行设置可以进行video视频检测、fps测试、批量文件测试与保存。  
 ### b、使用自己训练的权重
 1、按照训练步骤训练。  
 2、在yolo.py文件里面，在如下部分修改model_path和classes_path使其对应训练好的文件；**model_path对应logs文件夹下面的权值文件，classes_path是model_path对应分的类**。  
