@@ -63,15 +63,6 @@ class YoloDatasets(keras.utils.Sequence):
     def rand(self, a=0, b=1):
         return np.random.rand()*(b-a) + a
 
-    def Gaussnoise_func(self, image, mean=0, var=0.005):
-        image = np.array(image / 255, dtype=np.float32)
-        noise = np.random.normal(mean, var ** 0.5, np.shape(image))
-        out = image + noise
-
-        out = np.clip(out, 0.0, 1.0)
-        out = np.uint8(out * 255)
-        return out
-
     def get_random_data(self, annotation_line, input_shape, max_boxes=100, jitter=.3, hue=.1, sat=1.5, val=1.5, random=True):
         line    = annotation_line.split()
         #------------------------------#
@@ -150,22 +141,6 @@ class YoloDatasets(keras.utils.Sequence):
         #------------------------------------------#
         flip = self.rand()<.5
         if flip: image = image.transpose(Image.FLIP_LEFT_RIGHT)
-
-        #------------------------------------------#
-        #   模糊图像
-        #------------------------------------------#
-        image = np.array(image,np.uint8)
-        blur = self.rand()<.5
-        if blur: 
-            blur_parameter = self.rand(1, 1.5) if self.rand()<.5 else 1 / self.rand(1, 1.5)
-            image = cv2.GaussianBlur(image, (7, 7), blur_parameter)
-
-        #------------------------------------------#
-        #   加高斯噪声
-        #------------------------------------------#
-        noise = self.rand()<.5
-        if noise: 
-            image = self.Gaussnoise_func(image)
 
         #------------------------------------------#
         #   色域扭曲
