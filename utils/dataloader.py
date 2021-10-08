@@ -8,7 +8,7 @@ from PIL import Image
 from utils.utils import cvtColor, preprocess_input
 
 class YoloDatasets(keras.utils.Sequence):
-    def __init__(self, annotation_lines, input_shape, batch_size, num_classes, epoch_length, mosaic, train, mosaic_ratio = 0.9):
+    def __init__(self, annotation_lines, input_shape, batch_size, num_classes, epoch_length, mosaic, train, mosaic_ratio = 0.7):
         self.annotation_lines   = annotation_lines
         self.length             = len(self.annotation_lines)
         
