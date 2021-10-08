@@ -18,6 +18,11 @@ def yolo_body(input_shape, num_classes, phi):
     in_channels     = [256, 512, 1024]
     
     inputs      = Input(input_shape)
+    #---------------------------------------------------#
+    #   feat1 80, 80, 256
+    #   feat2 40, 40, 512
+    #   feat3 20, 20, 1024
+    #---------------------------------------------------#
     feat1, feat2, feat3 = darknet_body(inputs, depth, width)
 
     P5          = DarknetConv2D_BN_SiLU(int(in_channels[1] * width), (1, 1), name = 'backbone.lateral_conv0')(feat3)  
@@ -43,15 +48,36 @@ def yolo_body(input_shape, num_classes, phi):
     fpn_outs    = [P3_out, P4_out, P5_out]
     yolo_outs   = []
     for i, out in enumerate(fpn_outs):
+        # 利用1x1卷积进行通道整合
         stem    = DarknetConv2D_BN_SiLU(int(256 * width), (1, 1), strides = (1, 1), name = 'head.stems.' + str(i))(out)
         
+        # 利用3x3卷积进行特征提取
         cls_conv = DarknetConv2D_BN_SiLU(int(256 * width), (3, 3), strides = (1, 1), name = 'head.cls_convs.' + str(i) + '.0')(stem)
         cls_conv = DarknetConv2D_BN_SiLU(int(256 * width), (3, 3), strides = (1, 1), name = 'head.cls_convs.' + str(i) + '.1')(cls_conv)
+        #---------------------------------------------------#
+        #   判断特征点所属的种类
+        #   80, 80, num_classes
+        #   40, 40, num_classes
+        #   20, 20, num_classes
+        #---------------------------------------------------#
         cls_pred = DarknetConv2D(num_classes, (1, 1), strides = (1, 1), name = 'head.cls_preds.' + str(i))(cls_conv)
 
+        # 利用3x3卷积进行特征提取
         reg_conv = DarknetConv2D_BN_SiLU(int(256 * width), (3, 3), strides = (1, 1), name = 'head.reg_convs.' + str(i) + '.0')(stem)
         reg_conv = DarknetConv2D_BN_SiLU(int(256 * width), (3, 3), strides = (1, 1), name = 'head.reg_convs.' + str(i) + '.1')(reg_conv)
+        #---------------------------------------------------#
+        #   特征点的回归系数
+        #   reg_pred 80, 80, 4
+        #   reg_pred 40, 40, 4
+        #   reg_pred 20, 20, 4
+        #---------------------------------------------------#
         reg_pred = DarknetConv2D(4, (1, 1), strides = (1, 1), name = 'head.reg_preds.' + str(i))(reg_conv)
+        #---------------------------------------------------#
+        #   判断特征点是否有对应的物体
+        #   obj_pred 80, 80, 1
+        #   obj_pred 40, 40, 1
+        #   obj_pred 20, 20, 1
+        #---------------------------------------------------#
         obj_pred = DarknetConv2D(1, (1, 1), strides = (1, 1), name = 'head.obj_preds.' + str(i))(reg_conv)
         output   = Concatenate(axis = -1)([reg_pred, obj_pred, cls_pred])
         yolo_outs.append(output)

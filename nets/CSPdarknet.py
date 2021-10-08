@@ -112,32 +112,35 @@ def resblock_body(x, num_filters, num_blocks, expansion=0.5, shortcut=True, last
     #----------------------------------------------------------------#
     #   利用ZeroPadding2D和一个步长为2x2的卷积块进行高和宽的压缩
     #----------------------------------------------------------------#
+
+    # 320, 320, 64 => 160, 160, 128
     x = ZeroPadding2D(((1, 0),(1, 0)))(x)
-    #----------------------------------------------------------------#
-    #   利用ZeroPadding2D和一个步长为2x2的卷积块进行高和宽的压缩
-    #----------------------------------------------------------------#
     x = DarknetConv2D_BN_SiLU(num_filters, (3, 3), strides = (2, 2), name = name + '.0')(x)
     if last:
         x = SPPBottleneck(x, num_filters, name = name + '.1')
     return CSPLayer(x, num_filters, num_blocks, shortcut=shortcut, expansion=expansion, name = name + '.1' if not last else name + '.2')
 
 #---------------------------------------------------#
-#   CSPdarknet53 的主体部分
-#   输入为一张416x416x3的图片
+#   CSPdarknet的主体部分
+#   输入为一张640x640x3的图片
 #   输出为三个有效特征层
 #---------------------------------------------------#
 def darknet_body(x, dep_mul, wid_mul):
     base_channels   = int(wid_mul * 64)  # 64
     base_depth      = max(round(dep_mul * 3), 1)  # 3
-
+    # 640, 640, 3 => 320, 320, 12
     x = Focus()(x)
+    # 320, 320, 12 => 320, 320, 64
     x = DarknetConv2D_BN_SiLU(base_channels, (3, 3), name = 'backbone.backbone.stem.conv')(x)
-
+    # 320, 320, 64 => 160, 160, 128
     x = resblock_body(x, base_channels * 2, base_depth, name = 'backbone.backbone.dark2')
+    # 160, 160, 128 => 80, 80, 256
     x = resblock_body(x, base_channels * 4, base_depth * 3, name = 'backbone.backbone.dark3')
     feat1 = x
+    # 80, 80, 256 => 40, 40, 512
     x = resblock_body(x, base_channels * 8, base_depth * 3, name = 'backbone.backbone.dark4')
     feat2 = x
+    # 40, 40, 512 => 20, 20, 1024
     x = resblock_body(x, base_channels * 16, base_depth, shortcut=False, last=True, name = 'backbone.backbone.dark5')
     feat3 = x
     return feat1,feat2,feat3

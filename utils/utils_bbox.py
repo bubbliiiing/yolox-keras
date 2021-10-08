@@ -44,15 +44,30 @@ def DecodeBox(outputs,
             nms_iou         = 0.3,
             letterbox_image = True):
             
+    #---------------------------#
+    #   获得batch_size
+    #---------------------------#
     bs      = K.shape(outputs[0])[0]
 
     grids   = []
     strides = []
+    #---------------------------#
+    #   获得三个有效特征层的高宽
+    #---------------------------#
     hw      = [K.shape(x)[1:3] for x in outputs]
+    #----------------------------------------------#
+    #   batch_size, 80, 80, 4 + 1 + num_classes
+    #   batch_size, 40, 40, 4 + 1 + num_classes
+    #   batch_size, 20, 20, 4 + 1 + num_classes
+    #   
+    #   6400 + 1600 + 400
+    #   outputs batch_size, 8400, 4 + 1 + num_classes
+    #----------------------------------------------#
     outputs = tf.concat([tf.reshape(x, [bs, -1, 5 + num_classes]) for x in outputs], axis = 1)
     for i in range(len(hw)):
         #---------------------------#
         #   根据特征层生成网格点
+        #   获得每一个有效特征层网格点的坐标
         #---------------------------#
         grid_x, grid_y  = tf.meshgrid(K.arange(hw[i][1]), K.arange(hw[i][0]))
         grid            = tf.reshape(tf.stack((grid_x, grid_y), 2), (1, -1, 2))
@@ -65,12 +80,18 @@ def DecodeBox(outputs,
     #---------------------------#
     grids               = tf.concat(grids, axis=1)
     strides             = tf.concat(strides, axis=1)
-    #------------------------#
+    #-------------------------------------------#
     #   根据网格点进行解码
-    #------------------------#
+    #   box_xy 获得预测框中心归一化后的结果
+    #   box_wh 获得预测框宽高归一化后的结果
+    #-------------------------------------------#
     box_xy = (outputs[..., :2] + grids) * strides / K.cast(input_shape[::-1], K.dtype(outputs))
     box_wh = tf.exp(outputs[..., 2:4]) * strides / K.cast(input_shape[::-1], K.dtype(outputs))
 
+    #-------------------------------------------#
+    #   box_confidence 特征点是否有对应的物体
+    #   box_class_probs 特征点物体种类的鹅置信度
+    #-------------------------------------------#
     box_confidence  = K.sigmoid(outputs[..., 4:5])
     box_class_probs = K.sigmoid(outputs[..., 5: ])
     #------------------------------------------------------------------------------------------------------------#
@@ -128,21 +149,32 @@ if __name__ == "__main__":
         s = 1 / (1 + np.exp(-x))
         return s
 
-    def yolo_head(output):
+    def decode_for_vision(output):
         #---------------------------#
         #   根据特征层生成网格点
         #---------------------------#
-        bs              = np.shape(output)[0]
-        hw              = np.shape(output)[1:3]
-
+        # batch_size, 20, 20, 4 + 1 + num_classes
+        bs, hw = np.shape(output)[0], np.shape(output)[1:3]
+        # batch_size, 400, 4 + 1 + num_classes
         output          = np.reshape(output, [bs, hw[0] * hw[1], -1])
+
+        #---------------------------#
+        #   根据特征层的高和宽
+        #   进行网格的构建
+        #---------------------------#
         grid_x, grid_y  = np.meshgrid(np.arange(hw[1]), np.arange(hw[0]))
+        #------------------------------------#
+        #   单张图片，四百个网格点的xy轴坐标
+        #   1, 400, 2
+        #------------------------------------#
         grid            = np.reshape(np.stack((grid_x, grid_y), 2), (1, -1, 2))
         #------------------------#
         #   根据网格点进行解码
+        #   box_xy是预测框的中心
+        #   box_wh是预测框的宽高
         #------------------------#
-        box_xy = (output[..., :2] + grid)
-        box_wh = np.exp(output[..., 2:4])
+        box_xy  = (output[..., :2] + grid)
+        box_wh  = np.exp(output[..., 2:4])
 
         fig = plt.figure()
         ax  = fig.add_subplot(121)
@@ -180,5 +212,8 @@ if __name__ == "__main__":
 
         plt.show()
 
-    feat = np.random.uniform(0.5, 1, [4,20,20,4])
-    yolo_head(feat)
+    #---------------------------------------------#
+    #   batch_size, 20, 20, 4 + 1 + num_classes
+    #---------------------------------------------#
+    feat = np.concatenate([np.random.uniform(-1, 1, [4, 20, 20, 2]), np.random.uniform(1, 3, [4, 20, 20, 2]), np.random.uniform(1, 3, [4, 20, 20, 81])], -1)
+    decode_for_vision(feat)

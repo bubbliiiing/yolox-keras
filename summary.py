@@ -6,6 +6,6 @@ if __name__ == "__main__":
 
     model = yolo_body(input_shape, num_classes, 's')
 
-    # model.summary()
+    model.summary()
     for i in range(len(model.layers)): 
         print(i, model.layers[i].name)

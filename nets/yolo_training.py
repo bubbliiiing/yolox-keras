@@ -6,27 +6,39 @@ import tensorflow as tf
 
 def get_yolo_loss(input_shape, num_layers, num_classes):
     def yolo_loss(args):
+        #-----------------------------------------------#
+        #   labels 标签结果[batch_size, num_gt, 4 + 1]
+        #   y_pred 预测结果[[batch_size, 20, 20, num_classes + 5]
+        #                   [batch_size, 40, 40, num_classes + 5]
+        #                   [batch_size, 80, 80, num_classes + 5]]
+        #-----------------------------------------------#
         labels, y_pred = args[-1], args[:-1]
         x_shifts            = []
         y_shifts            = []
         expanded_strides    = []
         outputs             = []
         #-----------------------------------------------#
-        # inputs    [[batch_size, 20, 20, num_classes + 5]
-        #            [batch_size, 40, 40, num_classes + 5]
-        #            [batch_size, 80, 80, num_classes + 5]]
         # outputs   [[batch_size, 400, num_classes + 5]
         #            [batch_size, 1600, num_classes + 5]
         #            [batch_size, 6400, num_classes + 5]]
         #-----------------------------------------------#
         for i in range(num_layers):
             output          = y_pred[i]
+            #-----------------------------------------------#
+            #   stride 一个特征点对应原始像素点的数量
+            #-----------------------------------------------#
             grid_shape      = tf.shape(output)[1:3]
             stride          = input_shape[0] / tf.cast(grid_shape[0], K.dtype(output))
 
+            #-----------------------------------------------#
+            #   根据特征层的高和宽，获得网格点坐标
+            #-----------------------------------------------#
             grid_x, grid_y  = tf.meshgrid(K.arange(grid_shape[1]), K.arange(grid_shape[0]))
             grid            = tf.cast(tf.reshape(tf.stack((grid_x, grid_y), 2), (1, -1, 2)), K.dtype(output))
             
+            #-----------------------------------------------#
+            #   进行解码
+            #-----------------------------------------------#
             output          = tf.reshape(output, [tf.shape(y_pred[i])[0], grid_shape[0] * grid_shape[1], -1])
             output_xy       = (output[..., :2] + grid) * stride
             output_wh       = tf.exp(output[..., 2:4]) * stride
@@ -36,11 +48,15 @@ def get_yolo_loss(input_shape, num_layers, num_classes):
             y_shifts.append(grid[..., 1])
             expanded_strides.append(tf.ones_like(grid[..., 0]) * stride)
             outputs.append(output)
-        #-----------------------------------------------#
+        #-------------------------------------------------------------#
+        #   n_anchors_all代表了一个图片特征点的数量
+        #   当输入是640,640,3的时候，n_anchors_all就是8400
+        #   
         #   x_shifts            [1, n_anchors_all]
         #   y_shifts            [1, n_anchors_all]
         #   expanded_strides    [1, n_anchors_all]
-        #-----------------------------------------------#
+        #   outputs             [batch_size, n_anchors_all, num_classes + 5]
+        #-------------------------------------------------------------#
         x_shifts            = tf.concat(x_shifts, 1)
         y_shifts            = tf.concat(y_shifts, 1)
         expanded_strides    = tf.concat(expanded_strides, 1)
@@ -51,9 +67,9 @@ def get_yolo_loss(input_shape, num_layers, num_classes):
 
 def get_losses(x_shifts, y_shifts, expanded_strides, outputs, labels, num_classes):
     #-----------------------------------------------#
-    #   [batch, n_anchors_all, 4]
-    #   [batch, n_anchors_all, 1]
-    #   [batch, n_anchors_all, n_cls]
+    #   [batch, n_anchors_all, 4] 预测框的坐标
+    #   [batch, n_anchors_all, 1] 特征点是否有对应的物体
+    #   [batch, n_anchors_all, n_cls] 特征点对应物体的种类
     #-----------------------------------------------#
     bbox_preds  = outputs[:, :, :4]  
     obj_preds   = outputs[:, :, 4:5]
@@ -72,9 +88,10 @@ def get_losses(x_shifts, y_shifts, expanded_strides, outputs, labels, num_classe
     loss_cls    = 0.0
     loss_iou    = 0.0
     def loop_body(b, num_fg, loss_iou, loss_obj, loss_cls):
+        # num_gt 单张图片的真实框的数量
         num_gt  = tf.cast(nlabel[b], tf.int32)
         #-----------------------------------------------#
-        #   gt_bboxes_per_image     [num_gt, num_classes]
+        #   gt_bboxes_per_image     [num_gt, 4]
         #   gt_classes              [num_gt]
         #   bboxes_preds_per_image  [n_anchors_all, 4]
         #   obj_preds_per_image     [n_anchors_all, 1]
@@ -102,7 +119,7 @@ def get_losses(x_shifts, y_shifts, expanded_strides, outputs, labels, num_classe
             cls_target  = tf.cast(tf.one_hot(tf.cast(gt_matched_classes, tf.int32), num_classes) * tf.expand_dims(pred_ious_this_matching, -1), K.dtype(outputs))
             obj_target  = tf.cast(tf.expand_dims(fg_mask, -1), K.dtype(outputs))
             return num_fg_img, cls_target, reg_target, obj_target, fg_mask
-
+            
         num_fg_img, cls_target, reg_target, obj_target, fg_mask = tf.cond(tf.equal(num_gt, 0), f1, f2)
         num_fg      += num_fg_img
         loss_iou    += K.sum(1 - box_ciou(reg_target, tf.boolean_mask(bboxes_preds_per_image, fg_mask)))
@@ -121,12 +138,14 @@ def get_losses(x_shifts, y_shifts, expanded_strides, outputs, labels, num_classe
 
 def get_assignments(gt_bboxes_per_image, gt_classes, bboxes_preds_per_image, obj_preds_per_image, cls_preds_per_image, x_shifts, y_shifts, expanded_strides, num_classes, num_gt, total_num_anchors):
     #-------------------------------------------------------#
+    #   判断哪些特征点在真实框内部
     #   fg_mask                 [n_anchors_all]
     #   is_in_boxes_and_center  [num_gt, len(fg_mask)]
     #-------------------------------------------------------#
     fg_mask, is_in_boxes_and_center = get_in_boxes_info(gt_bboxes_per_image, x_shifts, y_shifts, expanded_strides, num_gt, total_num_anchors)
     
     #-------------------------------------------------------#
+    #   获得在真实框内部的特征点的预测结果
     #   fg_mask                 [n_anchors_all]
     #   bboxes_preds_per_image  [fg_mask, 4]
     #   cls_preds_              [fg_mask, num_classes]
@@ -138,13 +157,16 @@ def get_assignments(gt_bboxes_per_image, gt_classes, bboxes_preds_per_image, obj
     num_in_boxes_anchor     = tf.shape(bboxes_preds_per_image)[0]
 
     #-------------------------------------------------------#
+    #   计算真实框和预测框的重合程度
     #   pair_wise_ious      [num_gt, fg_mask]
     #-------------------------------------------------------#
     pair_wise_ious      = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image)
     pair_wise_ious_loss = -tf.log(pair_wise_ious + 1e-8)
     #-------------------------------------------------------#
+    #   计算真实框和预测框种类置信度的交叉熵
     #   cls_preds_          [num_gt, fg_mask, num_classes]
     #   gt_cls_per_image    [num_gt, fg_mask, num_classes]
+    #   pair_wise_cls_loss  [num_gt, fg_mask]
     #-------------------------------------------------------#
     gt_cls_per_image    = tf.tile(tf.expand_dims(tf.one_hot(tf.cast(gt_classes, tf.int32), num_classes), 1), (1, num_in_boxes_anchor, 1))
     cls_preds_          = K.sigmoid(tf.tile(tf.expand_dims(cls_preds_, 0), (num_gt, 1, 1))) *\
@@ -152,6 +174,11 @@ def get_assignments(gt_bboxes_per_image, gt_classes, bboxes_preds_per_image, obj
 
     pair_wise_cls_loss  = tf.reduce_sum(K.binary_crossentropy(gt_cls_per_image, tf.sqrt(cls_preds_)), -1)
 
+    #-------------------------------------------------------#
+    #   种类比较接近的情况瞎，交叉熵较低
+    #   真实框和预测框重合度较高的时候，cost较低
+    #   这个特征点是要有对应的真实框的，cost才会低
+    #-------------------------------------------------------#
     cost = pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 * tf.cast((~is_in_boxes_and_center), K.dtype(bboxes_preds_per_image))
 
     gt_matched_classes, fg_mask, pred_ious_this_matching, matched_gt_inds, num_fg = dynamic_k_matching(cost, pair_wise_ious, fg_mask, gt_classes, num_gt)
@@ -161,14 +188,17 @@ def get_in_boxes_info(gt_bboxes_per_image, x_shifts, y_shifts, expanded_strides,
     #-------------------------------------------------------#
     #   expanded_strides_per_image  [n_anchors_all]
     #   x_centers_per_image         [num_gt, n_anchors_all]
-    #   x_centers_per_image         [num_gt, n_anchors_all]
+    #   y_centers_per_image         [num_gt, n_anchors_all]
     #-------------------------------------------------------#
     expanded_strides_per_image  = expanded_strides[0]
     x_centers_per_image         = tf.tile(tf.expand_dims(((x_shifts[0] + 0.5) * expanded_strides_per_image), 0), [num_gt, 1])
     y_centers_per_image         = tf.tile(tf.expand_dims(((y_shifts[0] + 0.5) * expanded_strides_per_image), 0), [num_gt, 1])
 
     #-------------------------------------------------------#
-    #   gt_bboxes_per_image_x       [num_gt, n_anchors_all]
+    #   gt_bboxes_per_image_l       [num_gt, n_anchors_all]
+    #   gt_bboxes_per_image_r       [num_gt, n_anchors_all]
+    #   gt_bboxes_per_image_t       [num_gt, n_anchors_all]
+    #   gt_bboxes_per_image_b       [num_gt, n_anchors_all]
     #-------------------------------------------------------#
     gt_bboxes_per_image_l = tf.tile(tf.expand_dims((gt_bboxes_per_image[:, 0] - 0.5 * gt_bboxes_per_image[:, 2]), 1), [1, total_num_anchors])
     gt_bboxes_per_image_r = tf.tile(tf.expand_dims((gt_bboxes_per_image[:, 0] + 0.5 * gt_bboxes_per_image[:, 2]), 1), [1, total_num_anchors])
@@ -219,6 +249,7 @@ def get_in_boxes_info(gt_bboxes_per_image, x_shifts, y_shifts, expanded_strides,
     fg_mask = tf.cast(is_in_boxes_all | is_in_centers_all, tf.bool)
     
     is_in_boxes_and_center  = tf.boolean_mask(is_in_boxes, fg_mask, axis = 1) & tf.boolean_mask(is_in_centers, fg_mask, axis = 1)
+
     return fg_mask, is_in_boxes_and_center
 
 def bboxes_iou(b1, b2):
@@ -258,16 +289,18 @@ def bboxes_iou(b1, b2):
 
 def dynamic_k_matching(cost, pair_wise_ious, fg_mask, gt_classes, num_gt):
     #-------------------------------------------------------#
+    #   matching_matrix     [num_gt, fg_mask]
     #   cost                [num_gt, fg_mask]
-    #   pair_wise_ious      [num_gt, fg_mask]
+    #   pair_wise_ious      [num_gt, fg_mask] 每一个真实框和预测框的重合情况
     #   gt_classes          [num_gt]        
     #   fg_mask             [n_anchors_all]
-    #   matching_matrix     [num_gt, fg_mask]
     #-------------------------------------------------------#
     matching_matrix         = tf.zeros_like(cost)
 
     #------------------------------------------------------------#
     #   选取iou最大的n_candidate_k个点
+    #   获得当前真实框重合度最大的十个预测框的值
+    #   重合度的值域是[0, 1]，dynamic_ks的值就是[0, 10]
     #   然后求和，判断应该有多少点用于该框预测
     #   topk_ious           [num_gt, n_candidate_k]
     #   dynamic_ks          [num_gt]
