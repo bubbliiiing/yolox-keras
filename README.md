@@ -40,7 +40,8 @@ keras==2.1.5
 
 ## 文件下载
 训练所需的权值可在百度网盘中下载。  
-链接: https://pan.baidu.com/s/1o14Vi-CzZEaz9hic_OPZCQ 提取码: 4kc2    
+链接: https://pan.baidu.com/s/18vaa1ehQuS4vN6xRc2Qidg    
+提取码: 28mx    
 
 VOC数据集下载地址如下，里面已经包括了训练集、测试集、验证集（与测试集一样），无需再次划分：  
 链接: https://pan.baidu.com/s/1YuBbBKxm2FGgTU5OfaeC5A    
