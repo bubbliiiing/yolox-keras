@@ -15,6 +15,7 @@
 ## 性能情况
 | 训练数据集 | 权值文件名称 | 测试数据集 | 输入图片大小 | mAP 0.5:0.95 | mAP 0.5 |
 | :-----: | :-----: | :------: | :------: | :------: | :-----: |
+| COCO-Train2017 | [yolox_tiny.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_tiny.h5) | COCO-Val2017 | 640x640 | 34.7 | 53.6 
 | COCO-Train2017 | [yolox_s.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_s.h5) | COCO-Val2017 | 640x640 | 39.2 | 58.7
 | COCO-Train2017 | [yolox_m.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_m.h5) | COCO-Val2017 | 640x640 | 46.1 | 65.2
 | COCO-Train2017 | [yolox_l.h5](https://github.com/bubbliiiing/yolox-keras/releases/download/v1.0/yolox_l.h5) | COCO-Val2017 | 640x640 | 49.3 | 68.1
