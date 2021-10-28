@@ -12,8 +12,8 @@ from nets.yolo_training import get_yolo_loss
 #   Panet网络的构建，并且获得预测结果
 #---------------------------------------------------#
 def yolo_body(input_shape, num_classes, phi):
-    depth_dict      = {'s' : 0.33, 'm' : 0.67, 'l' : 1.00, 'x' : 1.33,}
-    width_dict      = {'s' : 0.50, 'm' : 0.75, 'l' : 1.00, 'x' : 1.25,}
+    depth_dict      = {'tiny': 0.33, 's' : 0.33, 'm' : 0.67, 'l' : 1.00, 'x' : 1.33,}
+    width_dict      = {'tiny': 0.375, 's' : 0.50, 'm' : 0.75, 'l' : 1.00, 'x' : 1.25,}
     depth, width    = depth_dict[phi], width_dict[phi]
     in_channels     = [256, 512, 1024]
     
