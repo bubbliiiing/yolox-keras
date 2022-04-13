@@ -142,6 +142,9 @@ class YOLO(object):
         #---------------------------------------------------------#
         font        = ImageFont.truetype(font='model_data/simhei.ttf', size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness   = int(max((image.size[0] + image.size[1]) // np.mean(self.input_shape), 1))
+        #---------------------------------------------------------#
+        #   计数
+        #---------------------------------------------------------#
         if count:
             print("top_label:", out_classes)
             classes_nums    = np.zeros([self.num_classes])
