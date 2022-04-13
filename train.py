@@ -305,17 +305,30 @@ if __name__ == "__main__":
 
         if start_epoch < end_epoch:
             print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
-            model.fit_generator(
-                generator           = train_dataloader,
-                steps_per_epoch     = epoch_step,
-                validation_data     = val_dataloader,
-                validation_steps    = epoch_step_val,
-                epochs              = end_epoch,
-                initial_epoch       = start_epoch,
-                use_multiprocessing = True if num_workers > 1 else False,
-                workers             = num_workers,
-                callbacks           = callbacks
-            )
+            if ngpus_per_node > 1:
+                parallel_model.fit_generator(
+                    generator           = train_dataloader,
+                    steps_per_epoch     = epoch_step,
+                    validation_data     = val_dataloader,
+                    validation_steps    = epoch_step_val,
+                    epochs              = end_epoch,
+                    initial_epoch       = start_epoch,
+                    use_multiprocessing = True if num_workers > 1 else False,
+                    workers             = num_workers,
+                    callbacks           = callbacks
+                )
+            else:
+                model.fit_generator(
+                    generator           = train_dataloader,
+                    steps_per_epoch     = epoch_step,
+                    validation_data     = val_dataloader,
+                    validation_steps    = epoch_step_val,
+                    epochs              = end_epoch,
+                    initial_epoch       = start_epoch,
+                    use_multiprocessing = True if num_workers > 1 else False,
+                    workers             = num_workers,
+                    callbacks           = callbacks
+                )
         #---------------------------------------#
         #   如果模型有冻结学习部分
         #   则解冻，并设置参数
@@ -354,14 +367,27 @@ if __name__ == "__main__":
             val_dataloader.batch_size      = Unfreeze_batch_size
 
             print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
-            model.fit_generator(
-                generator           = train_dataloader,
-                steps_per_epoch     = epoch_step,
-                validation_data     = val_dataloader,
-                validation_steps    = epoch_step_val,
-                epochs              = end_epoch,
-                initial_epoch       = start_epoch,
-                use_multiprocessing = True if num_workers > 1 else False,
-                workers             = num_workers,
-                callbacks           = callbacks
-            )
+            if ngpus_per_node > 1:
+                parallel_model.fit_generator(
+                    generator           = train_dataloader,
+                    steps_per_epoch     = epoch_step,
+                    validation_data     = val_dataloader,
+                    validation_steps    = epoch_step_val,
+                    epochs              = end_epoch,
+                    initial_epoch       = start_epoch,
+                    use_multiprocessing = True if num_workers > 1 else False,
+                    workers             = num_workers,
+                    callbacks           = callbacks
+                )
+            else:
+                model.fit_generator(
+                    generator           = train_dataloader,
+                    steps_per_epoch     = epoch_step,
+                    validation_data     = val_dataloader,
+                    validation_steps    = epoch_step_val,
+                    epochs              = end_epoch,
+                    initial_epoch       = start_epoch,
+                    use_multiprocessing = True if num_workers > 1 else False,
+                    workers             = num_workers,
+                    callbacks           = callbacks
+                )
