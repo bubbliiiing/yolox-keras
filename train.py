@@ -194,6 +194,7 @@ if __name__ == "__main__":
     #------------------------------------------------------#
     os.environ["CUDA_VISIBLE_DEVICES"]  = ','.join(str(x) for x in train_gpu)
     ngpus_per_node                      = len(train_gpu)
+    print('Number of devices: {}'.format(ngpus_per_node))
 
     #----------------------------------------------------#
     #   获取classes
