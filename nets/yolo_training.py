@@ -130,7 +130,7 @@ def get_losses(x_shifts, y_shifts, expanded_strides, outputs, labels, num_classe
     #-----------------------------------------------------------#
     #   在这个地方进行一个循环、循环是对每一张图片进行的
     #-----------------------------------------------------------#
-    _, num_fg, loss_iou, loss_obj, loss_cls = K.control_flow_ops.while_loop(lambda b,*args: b < tf.cast(tf.shape(outputs)[0], tf.int32), loop_body, [0, num_fg, loss_iou, loss_obj, loss_cls])
+    _, num_fg, loss_iou, loss_obj, loss_cls = tf.while_loop(lambda b,*args: b < tf.cast(tf.shape(outputs)[0], tf.int32), loop_body, [0, num_fg, loss_iou, loss_obj, loss_cls])
     
     num_fg      = tf.cast(tf.maximum(num_fg, 1), K.dtype(outputs))
     reg_weight  = 5.0
@@ -325,7 +325,7 @@ def dynamic_k_matching(cost, pair_wise_ious, fg_mask, gt_classes, num_gt):
     #-----------------------------------------------------------#
     #   在这个地方进行一个循环、循环是对每一张图片进行的
     #-----------------------------------------------------------#
-    _, matching_matrix = K.control_flow_ops.while_loop(lambda b,*args: b < tf.cast(num_gt, tf.int32), loop_body_1, [0, matching_matrix])
+    _, matching_matrix = tf.while_loop(lambda b,*args: b < tf.cast(num_gt, tf.int32), loop_body_1, [0, matching_matrix])
 
     #------------------------------------------------------------#
     #   anchor_matching_gt  [fg_mask]
@@ -350,7 +350,7 @@ def dynamic_k_matching(cost, pair_wise_ious, fg_mask, gt_classes, num_gt):
     #-----------------------------------------------------------#
     #   在这个地方进行一个循环、循环是对每一张图片进行的
     #-----------------------------------------------------------#
-    _, matching_matrix = K.control_flow_ops.while_loop(lambda b,*args: b < tf.cast(tf.shape(biger_one_indice)[0], tf.int32), loop_body_2, [0, matching_matrix])
+    _, matching_matrix = tf.while_loop(lambda b,*args: b < tf.cast(tf.shape(biger_one_indice)[0], tf.int32), loop_body_2, [0, matching_matrix])
 
     #------------------------------------------------------------#
     #   fg_mask_inboxes  [fg_mask]
